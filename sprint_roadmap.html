@@ -1,0 +1,447 @@
+
+<style>
+  :root {
+    --sprint-gap: 10px;
+    --track-h: 52px;
+    --label-w: 130px;
+  }
+
+  .board {
+    font-family: var(--font-sans);
+    padding: 1.5rem 0;
+    overflow-x: auto;
+  }
+
+  .phase-header {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+
+  .phase-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 12px;
+    border-radius: var(--border-radius-md);
+    letter-spacing: 0.03em;
+  }
+
+  .phase-0 { background: var(--color-background-secondary); color: var(--color-text-secondary); border: 0.5px solid var(--color-border-tertiary); }
+  .phase-1 { background: #E6F1FB; color: #0C447C; border: 0.5px solid #B5D4F4; }
+  .phase-2 { background: #E1F5EE; color: #085041; border: 0.5px solid #9FE1CB; }
+  .phase-3 { background: #FAEEDA; color: #633806; border: 0.5px solid #FAC775; }
+
+  @media (prefers-color-scheme: dark) {
+    .phase-1 { background: #042C53; color: #85B7EB; border-color: #0C447C; }
+    .phase-2 { background: #04342C; color: #5DCAA5; border-color: #085041; }
+    .phase-3 { background: #412402; color: #EF9F27; border-color: #633806; }
+  }
+
+  .sprint-grid {
+    display: grid;
+    grid-template-columns: var(--label-w) repeat(12, 1fr);
+    gap: 3px;
+    min-width: 780px;
+  }
+
+  .header-cell {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    text-align: center;
+    padding: 6px 2px;
+    border-bottom: 0.5px solid var(--color-border-tertiary);
+    letter-spacing: 0.04em;
+  }
+
+  .track-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    display: flex;
+    align-items: center;
+    padding: 0 8px 0 0;
+    height: var(--track-h);
+    line-height: 1.3;
+    border-right: 0.5px solid var(--color-border-tertiary);
+    margin-right: 4px;
+  }
+
+  .cell {
+    height: var(--track-h);
+    position: relative;
+  }
+
+  .block {
+    position: absolute;
+    inset: 3px 2px;
+    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 4px 7px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+    overflow: hidden;
+  }
+
+  .block:hover { opacity: 0.82; }
+
+  .block-title {
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .block-sub {
+    font-size: 9px;
+    opacity: 0.75;
+    line-height: 1.3;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 1px;
+  }
+
+  /* Colors */
+  .b-infra   { background: #E6F1FB; color: #0C447C; border: 0.5px solid #B5D4F4; }
+  .b-registry{ background: #EAF3DE; color: #27500A; border: 0.5px solid #C0DD97; }
+  .b-pipeline{ background: #E1F5EE; color: #085041; border: 0.5px solid #9FE1CB; }
+  .b-identity{ background: #FAEEDA; color: #633806; border: 0.5px solid #FAC775; }
+  .b-ui      { background: #EEEDFE; color: #3C3489; border: 0.5px solid #AFA9EC; }
+  .b-ml      { background: #FAECE7; color: #4A1B0C; border: 0.5px solid #F0997B; }
+  .b-infra-hard { background: #B5D4F4; color: #042C53; border: 0.5px solid #378ADD; }
+  .b-milestone  { background: #D85A30; color: #fff; border: 0.5px solid #993C1D; }
+
+  @media (prefers-color-scheme: dark) {
+    .b-infra    { background: #042C53; color: #85B7EB; border-color: #0C447C; }
+    .b-registry { background: #173404; color: #97C459; border-color: #3B6D11; }
+    .b-pipeline { background: #04342C; color: #5DCAA5; border-color: #0F6E56; }
+    .b-identity { background: #412402; color: #EF9F27; border-color: #854F0B; }
+    .b-ui       { background: #26215C; color: #AFA9EC; border-color: #534AB7; }
+    .b-ml       { background: #4A1B0C; color: #F0997B; border-color: #993C1D; }
+    .b-infra-hard { background: #0C447C; color: #E6F1FB; border-color: #378ADD; }
+    .b-milestone  { background: #993C1D; color: #FAECE7; border-color: #D85A30; }
+  }
+
+  .milestone-row {
+    display: grid;
+    grid-template-columns: var(--label-w) repeat(12, 1fr);
+    gap: 3px;
+    margin-top: 6px;
+    min-width: 780px;
+  }
+
+  .m-cell {
+    height: 32px;
+    position: relative;
+  }
+
+  .m-flag {
+    position: absolute;
+    inset: 4px 2px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+  }
+
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 0.5px solid var(--color-border-tertiary);
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--color-text-secondary);
+  }
+
+  .legend-swatch {
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+  }
+
+  .detail-panel {
+    margin-top: 1.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--color-background-secondary);
+    border-radius: var(--border-radius-lg);
+    border: 0.5px solid var(--color-border-tertiary);
+    min-height: 80px;
+  }
+
+  .detail-panel h3 {
+    font-size: 14px;
+    font-weight: 500;
+    margin: 0 0 6px;
+    color: var(--color-text-primary);
+  }
+
+  .detail-panel p {
+    font-size: 13px;
+    color: var(--color-text-secondary);
+    margin: 0 0 6px;
+    line-height: 1.5;
+  }
+
+  .detail-panel .nonneg {
+    font-size: 11px;
+    font-weight: 500;
+    color: #D85A30;
+    background: #FAECE7;
+    padding: 2px 8px;
+    border-radius: 3px;
+    display: inline-block;
+    margin-top: 4px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .detail-panel .nonneg { color: #F0997B; background: #4A1B0C; }
+  }
+
+  .ask-btn {
+    margin-top: 10px;
+    font-size: 12px;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: 4px 10px;
+    border: 0.5px solid var(--color-border-secondary);
+    border-radius: var(--border-radius-md);
+    background: transparent;
+    transition: background 0.15s;
+  }
+
+  .ask-btn:hover { background: var(--color-background-secondary); }
+</style>
+
+<div class="board">
+  <div class="phase-header">
+    <span class="phase-badge phase-0">Phase 0 — Foundation (S1–S2)</span>
+    <span class="phase-badge phase-1">Phase 1 — Core Pipeline (S3–S6)</span>
+    <span class="phase-badge phase-2">Phase 2 — Product Surface (S7–S10)</span>
+    <span class="phase-badge phase-3">Phase 3 — ML Readiness (S11–S12)</span>
+  </div>
+
+  <div class="sprint-grid" id="grid">
+    <!-- Headers -->
+    <div class="header-cell" style="text-align:left;padding-left:0">TRACK</div>
+    <div class="header-cell">S1</div><div class="header-cell">S2</div>
+    <div class="header-cell">S3</div><div class="header-cell">S4</div>
+    <div class="header-cell">S5</div><div class="header-cell">S6</div>
+    <div class="header-cell">S7</div><div class="header-cell">S8</div>
+    <div class="header-cell">S9</div><div class="header-cell">S10</div>
+    <div class="header-cell">S11</div><div class="header-cell">S12</div>
+  </div>
+
+  <div id="tracks-container"></div>
+
+  <div class="milestone-row" id="milestones">
+    <div class="track-label" style="font-size:10px;color:var(--color-text-secondary)">Milestones</div>
+  </div>
+
+  <div class="detail-panel" id="detail">
+    <p style="color:var(--color-text-secondary);font-style:italic">Click any block for details.</p>
+  </div>
+
+  <div class="legend">
+    <div class="legend-item"><div class="legend-swatch b-infra"></div>Infrastructure</div>
+    <div class="legend-item"><div class="legend-swatch b-registry"></div>Registry</div>
+    <div class="legend-item"><div class="legend-swatch b-pipeline"></div>Pipeline</div>
+    <div class="legend-item"><div class="legend-swatch b-identity"></div>Identity Resolution</div>
+    <div class="legend-item"><div class="legend-swatch b-ui"></div>UI / Product</div>
+    <div class="legend-item"><div class="legend-swatch b-ml"></div>ML Layer</div>
+    <div class="legend-item"><div class="legend-swatch b-milestone"></div>Milestone / Gate</div>
+  </div>
+</div>
+
+<script>
+const TRACKS = [
+  { label: "Infrastructure", rows: [
+    [
+      { s:1, e:2, cls:"b-infra-hard", title:"Dev environment", sub:"CI/CD, monorepo, secrets", detail:"Set up monorepo (TypeScript/Python), CI pipeline with PR checks, secrets management (Vault or AWS SSM), Postgres + S3 for raw storage. Immutable event log schema defined here — never changes later.", nonneg:"Event log schema is permanent. Design it right in S1." },
+      { s:3, e:4, cls:"b-infra", title:"Observability stack", sub:"Metrics, tracing, alerting", detail:"Datadog or Grafana stack. Every ingestion event emits span ID. The 7 required metrics from the engineering plan are instrumented: confidence tier %, Provisional resolution rate, template match success rate, etc.", nonneg:null },
+      { s:5, e:6, cls:"b-infra", title:"Storage lifecycle", sub:"Retention policy, pruning", detail:"Implement the storage lifecycle table from the engineering plan. Raw ingested: indefinite. Confidence scores: rolling 90 days. Training pairs: indefinite, deduplicated. Prevents cost blowup during early growth.", nonneg:null },
+    ]
+  ]},
+  { label: "Distributor Registry", rows: [
+    [
+      { s:1, e:2, cls:"b-registry", title:"Registry schema", sub:"Template versioning model", detail:"Versioned format templates: template ID, distributor ID, version, effective date, column map, known variants. Immutable once published — new versions only. Multiple active versions supported for distributor format transitions.", nonneg:"Templates are append-only. No overwrites. Build this constraint into the DB schema." },
+      { s:3, e:6, cls:"b-registry", title:"Tier 1 acquisition", sub:"4 nationals → 100+ formats", detail:"Southern Glazer's, RNDC, Breakthru, Johnson Brothers. These 4 control majority of volume. 90-day anchor client program: convert relationship capital into format templates. Target: 100 distributor formats by end of S6.", nonneg:"Anchor client program launches S3. Registry acquisition drives everything downstream." },
+      { s:7, e:10, cls:"b-registry", title:"Tier 2 acquisition", sub:"20 regional players", detail:"Young's Market, Heidelberg, Wine Warehouse, Martignetti, Empire Merchants, Winebow, Opici, and others confirmed in Tier 2. Each format acquired reduces onboarding friction for every subsequent winery.", nonneg:null },
+      { s:11, e:12, cls:"b-registry", title:"Schema drift system", sub:"Automated drift detection", detail:"Structural comparison between current file and matched template version. Column additions, removals, renames flagged automatically. Drift events surfaced for template update workflow. File is NOT blocked — processed against closest template with drift noted.", nonneg:null },
+    ]
+  ]},
+  { label: "Ingestion Pipeline", rows: [
+    [
+      { s:3, e:4, cls:"b-pipeline", title:"File reception + fingerprint", sub:"CSV, XLS, XLSX, PDF-tabular", detail:"Stage 1 and 2 of the ingestion pipeline. Accept any structured file format. Log receipt timestamp, source, file hash. Emit ingestion event regardless of content quality. Format fingerprinting: compare structure against registry, return best-match template + confidence. If no match above threshold: schema drift alert triggered.", nonneg:"If a file uploads, something comes out of it. No pipeline breaks, no dropped rows, no silent failures." },
+      { s:5, e:6, cls:"b-pipeline", title:"Column classification + routing", sub:"Stage 3–6. Target: 90%+ accuracy", detail:"Map source columns to canonical schema using template. Columns not in template enter classification pipeline. Row extraction: zero drops. Rows that cannot be parsed → raw form, routed as Provisional with reason code. Confidence scoring. State assignment to Accepted / Provisional / Unresolved.", nonneg:"Initial routing rule: everything below Accepted threshold routes to Provisional. No direct path to Unresolved at launch." },
+      { s:7, e:8, cls:"b-pipeline", title:"Exception pipeline", sub:"Grouping, reason codes, impact", detail:"Group exceptions by pattern — never individual rows. Attach reason code to every exception from the defined taxonomy (NO_TEMPLATE_MATCH, LOW_COLUMN_CONFIDENCE, IDENTITY_AMBIGUOUS, SCHEMA_DRIFT, MISSING_REQUIRED_FIELD, CROSS_SOURCE_CONFLICT, PARSE_FAILURE). Surface by business impact, not volume. Success: user resolves 500+ items in under 5 minutes.", nonneg:"Zero unclassified exceptions. Every failure has a reason code. If exceptions list as rows, the pipeline has failed." },
+      { s:9, e:10, cls:"b-pipeline", title:"Retry + replay system", sub:"Event-driven + monthly sweep", detail:"Unresolved items retry on learning events (new template, new canonical entity, model update), not just monthly sweep. Monthly is the floor. Items enqueued in priority order: highest business impact first. Synchronous reprocessing is NOT triggered — it enqueues.", nonneg:null },
+    ]
+  ]},
+  { label: "Identity Resolution", rows: [
+    [
+      { s:5, e:6, cls:"b-identity", title:"SKU matching v1", sub:"Candidate graph, confidence scores", detail:"Store multiple candidate matches per entity on first encounter. Assign confidence score to each candidate. Surface highest-confidence candidate to user as Provisional interpretation. Target at 6 months: 70–80% automated.", nonneg:null },
+      { s:7, e:8, cls:"b-identity", title:"Account resolution v1", sub:"DBA names, chain disambiguation", detail:"Account / retailer matching. Harder than SKU — DBA names, location disambiguation, chain vs independent. 6-month target: 60–70% automated. Confirmed entities propagate forward — future occurrences match directly to Accepted.", nonneg:null },
+      { s:9, e:10, cls:"b-identity", title:"Canonical entity graph", sub:"Cross-distributor reconciliation", detail:"User confirmation collapses candidates to confirmed canonical entity. Rejection generates labeled training pair: wrong candidate + correct entity. Confirmed entities applied globally — one confirmation cleans the entity across all distributors.", nonneg:null },
+      { s:11, e:12, cls:"b-identity", title:"Location resolution", sub:"Target: 80–90% automated", detail:"Geographic normalization is more tractable than entity naming. Territory, region, zip-level normalization. Feeds depletion-by-territory analytics that Enterprise tier requires.", nonneg:null },
+    ]
+  ]},
+  { label: "UI / Product", rows: [
+    [
+      { s:3, e:4, cls:"b-ui", title:"First output screen", sub:"5-min output, 4 required elements", detail:"Post-upload screen: total sales figure with confidence indicator, data coverage breakdown (visual, not just numbers), top 3 exception groups in plain language, distributor match status. Must appear within 5 minutes of upload. User understands system state within 10 seconds of seeing it.", nonneg:"This is the trust moment. If the first output is wrong or late, trust resets to zero. Build this before anything else in the UI." },
+      { s:5, e:6, cls:"b-ui", title:"Provisional review interface", sub:"500 items in 5 min behavioral req", detail:"Show one item at a time with full interpretation context. System's interpretation visible + why (which rule/template). Confidence in plain language (not a decimal). Accept/reject keyboard-accessible. After accept: propagation count shown immediately. After reject: inline correction with typeahead against canonical graph. Progress framed as coverage completion, not task count.", nonneg:null },
+      { s:7, e:8, cls:"b-ui", title:"Unified dashboard", sub:"10-sec operational state read", detail:"Aggregate sales (confirmed only, with coverage indicator). Inventory with confidence tier breakdown. Depletion by SKU. Open Provisional count framed as business coverage gap. Trend indicators. Must NOT show system status messages requiring technical interpretation. No raw error codes.", nonneg:"No figure shown that could be mistaken for complete when it is not." },
+      { s:9, e:10, cls:"b-ui", title:"Exception + identity UI", sub:"60-sec to action on top pattern", detail:"Exception interface: patterns grouped, suggested fix prominent, fix-pattern action shows count before confirming, resolution updates coverage metrics immediately. Identity mapping: ambiguous string as-is from source, top candidate, 2–3 alternatives, keyboard selection, propagation count after. Plain language everywhere — reason codes translated.", nonneg:null },
+      { s:11, e:12, cls:"b-ui", title:"Vindication moment + provenance", sub:"Trust architecture", detail:"Design explicitly for the first discrepancy catch — system finds something the user would have missed in a spreadsheet. Surface prominently, not in a log. Full provenance chain: source file → distributor → template match → columns → confidence score → Provisional items excluded. One click from any figure.", nonneg:"This moment must not be treated as routine exception handling. The interface treats it as significant." },
+    ]
+  ]},
+  { label: "ML / Learning Layer", rows: [
+    [
+      { s:3, e:6, cls:"b-ml", title:"Training data collection", sub:"Labels from normal ops", detail:"The human-in-the-loop feedback loop generates labeled training data as a byproduct of normal operations. Every Provisional accept/reject is a training signal. No separate annotation process. Target: sufficient labeled volume by end of S6 to support initial model training.", nonneg:"Rules-based layer must stabilize before ML is introduced. This phase is data collection only." },
+      { s:7, e:10, cls:"b-ml", title:"Rules layer stabilization", sub:"Measure, tune, baseline", detail:"Rules-based layer performance measured against all 7 required metrics. Provisional volume trending down. Accepted rate trending up. Exception volume per distributor decreasing month-over-month. ML introduction gated on this stability — adding ML to an unstable rules layer produces a system that learns wrong patterns permanently.", nonneg:"ML introduction requires demonstrated rules stability. This is a gate, not a schedule." },
+      { s:11, e:12, cls:"b-ml", title:"ML layer introduction", sub:"Confidence booster, edge cases", detail:"ML introduced as confidence booster on top of rules-based layer. Rules remain primary. ML handles edge cases rules do not cover. Months 9–12 per the engineering plan. Provisional volume should begin decreasing faster. Accepted rate increases. Year 2: ML matures, exception handling becomes genuinely exceptional.", nonneg:"ML introduced only after stability gate is passed. Not on a fixed calendar date." },
+    ]
+  ]},
+];
+
+const MILESTONES = [
+  { s:2, label:"Infra ready", cls:"b-infra" },
+  { s:6, label:"100 formats / Anchor pilot", cls:"b-milestone" },
+  { s:8, label:"First paying customer", cls:"b-milestone" },
+  { s:10, label:"Rules stable → ML gate", cls:"b-registry" },
+  { s:12, label:"Series A readiness", cls:"b-milestone" },
+];
+
+const DETAILS = {};
+
+function placeBlock(container, block, totalCols) {
+  const row = document.createElement('div');
+  row.style.display = 'grid';
+  row.style.gridTemplateColumns = `var(--label-w) repeat(12, 1fr)`;
+  row.style.gap = '3px';
+
+  const labelDiv = document.createElement('div');
+  labelDiv.className = 'track-label';
+  row.appendChild(labelDiv);
+
+  for (let i = 1; i <= 12; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'cell';
+    row.appendChild(cell);
+  }
+
+  const targetCell = row.children[block.s]; // children[0] is label, children[1] is S1, etc.
+  const spanCols = block.e - block.s + 1;
+
+  const blockDiv = document.createElement('div');
+  blockDiv.className = 'block ' + block.cls;
+  blockDiv.style.right = `calc(${(block.e - block.s) * -100}% - ${(block.e - block.s) * 3}px - ${(block.e - block.s) * 2}px)`;
+  
+  // Build absolute positioned block spanning multiple cells
+  blockDiv.innerHTML = `<div class="block-title">${block.title}</div>${block.sub ? `<div class="block-sub">${block.sub}</div>` : ''}`;
+  
+  const id = block.title.replace(/\s/g,'_');
+  blockDiv.onclick = () => showDetail(block);
+  
+  targetCell.appendChild(blockDiv);
+
+  // Make block span columns by setting width
+  blockDiv.style.position = 'absolute';
+  blockDiv.style.left = '2px';
+  blockDiv.style.right = 'auto';
+  blockDiv.style.width = `calc(${spanCols * 100}% + ${(spanCols - 1) * 3}px - 4px)`;
+
+  return row;
+}
+
+function showDetail(block) {
+  const panel = document.getElementById('detail');
+  const nonNeg = block.nonneg ? `<div class="nonneg">Non-negotiable: ${block.nonneg}</div>` : '';
+  const prompt = `Tell me more about the ${block.title} sprint — specifically: ${block.sub}`;
+  panel.innerHTML = `<h3>${block.title}</h3><p>${block.detail}</p>${nonNeg}<br><button class="ask-btn" onclick="sendPrompt('${prompt.replace(/'/g, "\\'")}')">Ask deeper question ↗</button>`;
+}
+
+function render() {
+  const container = document.getElementById('tracks-container');
+  container.innerHTML = '';
+
+  TRACKS.forEach(track => {
+    track.rows.forEach((rowBlocks, ri) => {
+      const rowEl = document.createElement('div');
+      rowEl.style.cssText = 'display:grid;grid-template-columns:var(--label-w) repeat(12,1fr);gap:3px;min-width:780px;';
+
+      const labelDiv = document.createElement('div');
+      labelDiv.className = 'track-label';
+      if (ri === 0) labelDiv.textContent = track.label;
+      rowEl.appendChild(labelDiv);
+
+      for (let i = 1; i <= 12; i++) {
+        const cell = document.createElement('div');
+        cell.className = 'cell';
+        rowEl.appendChild(cell);
+      }
+
+      rowBlocks.forEach(block => {
+        const spanCols = block.e - block.s + 1;
+        const cellIndex = block.s; // 1-based
+        const targetCell = rowEl.children[cellIndex]; // children[0] is label
+
+        const blockDiv = document.createElement('div');
+        blockDiv.className = 'block ' + block.cls;
+        blockDiv.innerHTML = `<div class="block-title">${block.title}</div>${block.sub ? `<div class="block-sub">${block.sub}</div>` : ''}`;
+        blockDiv.onclick = () => showDetail(block);
+        blockDiv.style.position = 'absolute';
+        blockDiv.style.left = '2px';
+        blockDiv.style.right = 'auto';
+        blockDiv.style.width = `calc(${spanCols * 100}% + ${(spanCols - 1) * 3}px - 4px)`;
+
+        targetCell.appendChild(blockDiv);
+      });
+
+      container.appendChild(rowEl);
+    });
+  });
+
+  // Milestones
+  const mRow = document.getElementById('milestones');
+  // Clear existing cells except label
+  while (mRow.children.length > 1) mRow.removeChild(mRow.lastChild);
+
+  // Add 12 blank cells
+  for (let i = 0; i < 12; i++) {
+    const cell = document.createElement('div');
+    cell.className = 'm-cell';
+    mRow.appendChild(cell);
+  }
+
+  MILESTONES.forEach(m => {
+    const cell = mRow.children[m.s]; // children[0] is label
+    const flag = document.createElement('div');
+    flag.className = 'm-flag ' + m.cls;
+    flag.textContent = m.label;
+    flag.style.cssText += 'cursor:pointer;';
+    flag.onclick = () => {
+      document.getElementById('detail').innerHTML = `<h3>Milestone: ${m.label}</h3><p>Sprint ${m.s} gate. Click blocks above for detailed requirements.</p>`;
+    };
+    cell.appendChild(flag);
+  });
+}
+
+render();
+</script>
